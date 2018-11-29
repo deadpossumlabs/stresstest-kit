@@ -44,52 +44,23 @@ class TestController(object):
             try:
                 list_args = []
                 func_args = list(test["args"])
-                # if type(func_args) is not tuple and type(func_args) is not list:
-                #     func_args = tuple(func_args)
+
                 if test["accounts"]:
                     for i in range(len(test["accounts"])):
                         args = func_args.copy()
-                        print(args)
                         flows += 1
-                        j = i + 1
-                        if i == len(test["accounts"]) - 1:
-                            j = -1
-                        accounts = (test["accounts"][i][0], test["accounts"][i][1],
-                                    test["accounts"][j][0], test["accounts"][j][1])
-                        args.append(accounts)
-                        print(args)
+
+                        account = (test["accounts"][i][0], test["accounts"][i][1])
+                        args.append(account)
                         list_args.append(args)
                 else:
                     list_args.append(func_args)
                     flows += 1
                 logger.info("Start test {0}(flows: {3}): {1}{2}".format(test_num, test["func"],
-                                                                       test["args"], flows))
-                # if test["accounts"]:
-                #     for i in range(len(test["accounts"])):
-                #         j = i + 1
-                #         if i == len(test["accounts"]) - 1:
-                #             j = -1
-                #         accounts = (test["accounts"][i][0], test["accounts"][i][1],
-                #                     test["accounts"][j][0], test["accounts"][j][1])
-                #         list_flows.append(Thread(target=test_obj.start_test, args=(test["func"], accounts)))
-                #         list_flows[-1].start()
-                # else:
+                                                                        test["args"], flows))
+
                 for i in range(flows):
-                        # if len(test["args"]) == 0:
-                        #     self.__logger.info("Start test {0}: {1}()".format(test_num, test["func"], test["args"]))
-                        #     list_flows.append(Thread(target=test_obj.start_test, args=(test["func"],)))
-                        # else:
-                        # args = []
-                        # args = [self.__w3, self.__logger, self.__inspector]
-                        # if test["time"] is not None:
-                        #     args.append(test["time"])
 
-                        # if len(func_args) > 1:
-                        #     args.extend(func_args)
-                        # elif len(func_args) is 1:
-                        #     args.append(*func_args)
-
-                        # list_flows.append(Thread(target=test["func"], args=func_args))
                     list_flows.append(Thread(target=test_obj.start_test, args=(test["func"], list_args[i])))
                     list_flows[-1].start()
                 while True:

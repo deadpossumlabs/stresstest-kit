@@ -1,8 +1,24 @@
+import json
 import logging
 import time
 
+from hexbytes import HexBytes
+
 # logging.basicConfig(format = u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s', level = logging.DEBUG) # bacic config
 # logging.basicConfig(format = '%(levelname)-10s[%(asctime)s] %(message)s', level = logging.DEBUG, file = './logs/LOG-{1}-test{0}.log'.format(test_num, get_time())) # light config
+
+FOLDERS = {
+    "logs": "./logs/",
+    "contracts": "./contracts/",
+    "abi": "./abi/"
+}
+
+
+class HexJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, HexBytes):
+            return obj.hex()
+        return super().default(obj)
 
 
 def get_time():
@@ -30,3 +46,4 @@ def get_logger(test_num):
     logger.addHandler(fh)
 
     return logger
+
