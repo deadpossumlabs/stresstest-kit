@@ -10,7 +10,7 @@ from hexbytes import HexBytes
 FOLDERS = {
     "logs": "./logs/",
     "contracts": "./contracts/",
-    "abi": "./abi/"
+    "abi": "./contracts/abi/"
 }
 
 

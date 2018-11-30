@@ -69,7 +69,7 @@ class TestController(object):
                         break
 
             except TypeError as e:
-                logger.error("\tUnhandled error in cycle:{0}{1}".format(e.__class__.__name__, e))
+                logger.error("\tUnhandled error in starting {2}:{0}{1}".format(e.__class__.__name__, e, test["func"]))
 
                 continue
 
