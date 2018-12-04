@@ -21,7 +21,7 @@ class TestController(object):
     def __init__(self, host, config):
 
         self.setSprite = set()
-        etherscan_provider = Web3.HTTPProvider(host)
+        etherscan_provider = Web3.HTTPProvider(host, request_kwargs={'timeout': 30})
         self.__w3 = Web3(etherscan_provider)
         self.__inspector = BlockInspector()
 
@@ -47,11 +47,15 @@ class TestController(object):
 
                 if test["accounts"]:
                     for i in range(len(test["accounts"])):
+                        j = i + 1
+                        if j == len(test["accounts"]):
+                            j = 0
                         args = func_args.copy()
                         flows += 1
 
-                        account = (test["accounts"][i][0], test["accounts"][i][1])
-                        args.append(account)
+                        accounts = (test["accounts"][i][0], test["accounts"][i][1],
+                                    test["accounts"][j][0], test["accounts"][j][1])
+                        args.append(accounts)
                         list_args.append(args)
                 else:
                     list_args.append(func_args)

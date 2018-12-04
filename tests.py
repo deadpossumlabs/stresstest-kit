@@ -27,8 +27,11 @@ class Tests:
             "deploy": self.deploy_contract,
             "accounts": self.get_accounts_info,
             "get_trans": self.get_transaction_info,
-            "send": self.send_transaction_from_contract
-            # "new_acc": self.set_account,
+            "send_trans": self.send_transaction_from_contract,
+            "send_eth": self.send_eth,
+            "unlock": self.unlock_account,
+            "new_acc": self.set_account,
+            "private": self.get_private_key,
             # "node": self.node_info,
         }
 
@@ -50,33 +53,45 @@ class Tests:
         self.w3.admin.nodeInfo()
         self.logger.info("\t{0}".format(self.w3.admin.nodeInfo))
 
-    def test_many_light_trans(self, time_live, account):
+    def send_eth(self, account1, account2, funds):
+        sender = self.w3.toChecksumAddress(account1[0])
+        sender_key = account1[1]
+        receiver = self.w3.toChecksumAddress(account2[0])
+        trans_param = dict(
+            nonce=self.w3.eth.getTransactionCount(sender),
+            gasPrice=self.w3.eth.gasPrice,
+            gas=21000,
+            to=receiver,
+            value=hex(funds)
+        )
+        signed_txn = self.w3.eth.account.signTransaction(trans_param, sender_key)
+
+        trans = self.w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+
+        trans_hash = HexBytes(trans)
+        self.logger.info("\tSend transaction: {0}".format(trans_hash.hex()))
+
+    def test_many_light_trans(self, time_live, accounts):
 
         """
         Checking the network for resistance to a large number of light
         transaction requests
         :param time_live: means how long will the thread run
-        :param account: a list or a tuple that includes address and a key
-                        from account for transferring Ethereum
+        :param accounts: a list or a tuple that includes address and a key
+                        from two accounts for transferring Ethereum
         """
-        accounts = self.get_accounts()
-        print(accounts, account[0])
-        index_account = accounts.index(account[0])
-        index_next_account = index_account + 1
-        if index_next_account == len(accounts):
-            index_next_account = 0
-        next_account = accounts[index_next_account]
+
         start_time = time.time()
-        address1 = self.w3.toChecksumAddress(account[0])
-        key1 = account[1]
-        address2 = self.w3.toChecksumAddress(next_account)
+        address1 = self.w3.toChecksumAddress(accounts[0])
+        key1 = accounts[1]
+        address2 = self.w3.toChecksumAddress(accounts[2])
         nonce = self.w3.eth.getTransactionCount(address1)
         while True:
             try:
                 trans_param = dict(
                         nonce=nonce,
                         gasPrice=self.w3.eth.gasPrice,
-                        gas=100000,
+                        gas=21000,
                         to=address2,
                         value=hex(10000000000000000)
                 )
@@ -105,32 +120,47 @@ class Tests:
                 if time.time() - start_time >= time_live:
                     break
 
-    def test_many_heavy_trans(self, time_live, cnt_address, func_name, abi_file, account):
-        print(account)
+    def test_many_heavy_trans(self, time_live, cnt_address, func_name, abi_file, accounts):
+        value1 = 0
+        value2 = 100000
+        gas1 = self.w3.eth.gasPrice
+        gas2 = gas1 + 1000
         start_time = time.time()
+        acct1 = self.w3.eth.account.privateKeyToAccount(accounts[1])
+        acct2 = self.w3.eth.account.privateKeyToAccount(accounts[3])
+
+        nonce1 = self.w3.eth.getTransactionCount(acct1.address)
+        nonce2 = self.w3.eth.getTransactionCount(acct2.address)
+
         while True:
-            self.send_transaction_from_contract(account[1], cnt_address, func_name, abi_file)
+            self.send_transaction_from_contract(accounts[1], cnt_address, func_name, abi_file, nonce1,
+                                                args=[value1], gasprice=gas1)
+            # time.sleep(1)
+            # self.send_transaction_from_contract(accounts[3], cnt_address, func_name, abi_file, nonce2,
+            #                                     args=[value2], gasprice=gas2)
             if time.time() - start_time >= time_live:
                 break
+            nonce1 += 1
+            nonce2 += 1
+            value1 += 1
+            value2 += 1
+            gas1 += 10000000000000
+            gas2 += 11000000000000
+            # time.sleep(1)
 
-    def test_expensive_trans(self, time_live, account):
-        accounts = self.get_accounts()
-        print(accounts, account[0])
-        index_account = accounts.index(account[0])
-        index_next_account = index_account + 1
-        if index_next_account == len(accounts):
-            index_next_account = 0
-        next_account = accounts[index_next_account]
+    def test_expensive_trans(self, time_live, accounts):
+
         start_time = time.time()
-        address1 = self.w3.toChecksumAddress(account[0])
-        key1 = account[1]
-        address2 = self.w3.toChecksumAddress(next_account)
+        address1 = self.w3.toChecksumAddress(accounts[0])
+
+        key1 = accounts[1]
+        address2 = self.w3.toChecksumAddress(accounts[2])
         nonce = self.w3.eth.getTransactionCount(address1)
         while True:
             try:
                 trans_param = dict(
                     nonce=nonce,
-                    gasPrice=10000000000000,
+                    gasPrice=100000000000000000,
                     gas=100000,
                     to=address2,
                     value=hex(10000000000000000)
@@ -185,7 +215,7 @@ class Tests:
                 )
                 params2 = params.copy()
                 params2["value"] = hex(10000000000000001)
-                params2["gasPrice"] += 10000000000
+                params2["gasPrice"] += 10000000000000
                 signed_txn = self.w3.eth.account.signTransaction(params, key1)
                 _signed_txn = self.w3.eth.account.signTransaction(params2, key1)
                 trans1 = self.w3.eth.sendRawTransaction(signed_txn.rawTransaction)
@@ -214,6 +244,21 @@ class Tests:
 
                                             ## Tests with accounts ##
 
+    def unlock_account(self, address, passphrase):
+        address = self.w3.toChecksumAddress(address)
+        try:
+            is_unlock = self.w3.personal.unlockAccount(address, passphrase)
+        except ValueError as e:
+            if e.args[0]["data"] == "InvalidAccount":
+                self.logger.error("\tCannot find account.")
+            else:
+                self.logger.error("Unhandled error: {0}".format(e))
+            return
+        message = "Account {} is not unlocked. Use right passphrase".format(address)
+        if is_unlock:
+            message = "Account {} is succesfully unlocked".format(address)
+        self.logger.info(message)
+
     def get_balance(self, address):
 
         """
@@ -225,9 +270,12 @@ class Tests:
         address = self.w3.toChecksumAddress(address)
         balance = self.w3.eth.getBalance(address)
         self.logger.info("\tBalance of account {0}:{1}".format(address, balance))
+        return balance
 
     def get_accounts_info(self):
-        accounts = self.w3.eth.accounts
+        accounts = self.w3.personal.listAccounts
+        for i in range(len(accounts)):
+            accounts[i] = accounts[i].lower()
         logs = "\tAccounts:"
         for account in accounts:
             account = "\n\t\t\t\t\t\t\t\t\t\t\t" + account
@@ -238,13 +286,29 @@ class Tests:
 
     def get_accounts(self):
         accounts = self.w3.eth.accounts
+        for i in range(len(accounts)):
+            accounts[i] = accounts[i].lower()
         return accounts
 
-    def set_account(self):
-        self.logger.info(self.w3.eth.accounts)
+    def set_account(self, passphrase, priv_key, count=1):
+        for i in range(count):
+            address = self.w3.personal.importRawKey(priv_key, passphrase)
+            self.logger.info("\tNew account: {0}".format(address))
 
+    def get_private_key(self, file, password):
+        with open(FOLDERS["accounts"] + file) as keyfile:
+            abi = json.loads(keyfile.read())
+            address = "0x" + abi["address"]
+            try:
+                private_key_bin = self.w3.eth.account.decrypt(abi, password)
+            except ValueError as e:
+                self.logger.error("\tCannot get private key. Make sure that you enter the correct password. ({0})".format(e))
+                return
+            _private_key = private_key_bin.hex() # 0x...
+            private_key = _private_key.replace("0x", "")
+            self.logger.info("\tPrivate key of {0}: {1}".format(address, private_key))
 
-                                            ## Tests with contracts and transactions ##
+                    ## Tests with contracts and transactions ##
 
     def deploy_contract(self, file_sol, priv_key):
         with open(self.DIR_CONTRACTS + file_sol, "r") as f:
@@ -260,11 +324,12 @@ class Tests:
             bytecode=bytecode
         )
         acct = self.w3.eth.account.privateKeyToAccount(priv_key)
+        self.logger.info("\tDeploying...")
         tx_hash = contract.constructor().buildTransaction({
             'from': acct.address,
             'nonce': self.w3.eth.getTransactionCount(acct.address),
             'gas': 1728712,
-            'gasPrice': self.w3.toWei('21', 'gwei')
+            'gasPrice': self.w3.eth.gasPrice
         })
         signed = acct.signTransaction(tx_hash)
         trans = self.w3.eth.sendRawTransaction(signed.rawTransaction)
@@ -292,7 +357,8 @@ class Tests:
                          "\t\t\t\t\t\t\t\t\t\t\t{1}".format(hash_trans, trans_info_pretty))
         return trans_info
 
-    def send_transaction_from_contract(self, priv_key, cnt_address, func_name, abi_file, to=None, value=None):
+    def send_transaction_from_contract(self, priv_key, cnt_address, func_name, abi_file, nonce,
+                                       to=None, value=None, args=None, gasprice=None):
 
         cnt_address = self.w3.toChecksumAddress(cnt_address)
         acct = self.w3.eth.account.privateKeyToAccount(priv_key)
@@ -304,14 +370,22 @@ class Tests:
             address=cnt_address,
             abi=abi
         )
+        if not gasprice:
+            gasprice = self.w3.eth.gasPrice
         trans_param = {
             "from": acct.address,
-            "nonce": self.w3.eth.getTransactionCount(acct.address)
+            "nonce": nonce,
+            "gasPrice": gasprice,
         }
-        if to and value:
+        if to:
             trans_param["to"] = to
+        if value:
             trans_param["value"] = value
-        txn_hash = contract.functions[func_name]().buildTransaction(trans_param)
+        func_args = []
+        if args:
+            for arg in args:
+                func_args.append(arg)
+        txn_hash = contract.functions[func_name](*func_args).buildTransaction(trans_param)
         signed = acct.signTransaction(txn_hash)
         trans = self.w3.eth.sendRawTransaction(signed.rawTransaction)
         trans_address = HexBytes(trans).hex()

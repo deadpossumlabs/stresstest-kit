@@ -10,7 +10,8 @@ from hexbytes import HexBytes
 FOLDERS = {
     "logs": "./logs/",
     "contracts": "./contracts/",
-    "abi": "./contracts/abi/"
+    "abi": "./contracts/abi/",
+    "accounts": "./accounts/"
 }
 
 
@@ -30,7 +31,7 @@ def get_time():
 
 def get_logger(test_num):
     logger = logging.getLogger(str(test_num))
-    logger.setLevel(logging.INFO)  # By default, logs all messages
+    logger.setLevel(logging.INFO)  # By default, logs info messages
 
     ch = logging.StreamHandler()  # StreamHandler logs to console
     ch.setLevel(logging.INFO)
