@@ -11,16 +11,16 @@ from time import sleep
 class TestController(object):
 
     __test_list = []
-    __params = []
 
-    def __new__(cls, host, config):
+    def __new__(cls, host, config, accounts):
         if not hasattr(cls, 'instance'):
             cls.instance = super(TestController, cls).__new__(cls)
             inject.configure(config)
         return cls.instance
 
-    def __init__(self, host, config):
+    def __init__(self, host, config, accounts):
 
+        self.accounts = accounts
         self.setSprite = set()
         etherscan_provider = Web3.HTTPProvider(host, request_kwargs={'timeout': 30})
         self.__w3 = Web3(etherscan_provider)
@@ -29,45 +29,41 @@ class TestController(object):
     def get_list_test(self):
         return self.__test_list
 
-    def get_params(self):
-        return self.__params
-
-    def add_test(self, func, args=tuple(), accounts=None):
-        self.__test_list.append({"func": func, "args": args, "accounts": accounts})
+    def add_test(self, func, args=list(), flows=1):
+        self.__test_list.append({"func": func, "args": list(args), "flows": flows})
 
     def start_tests(self):
         test_num = 1
         for test in self.__test_list:
-            flows = 0
             logger = get_logger(test_num)
             list_flows = []
             test_obj = Tests(self.__w3, logger, self.__inspector)
             try:
-                list_args = []
-                func_args = list(test["args"])
+                func_args = test["args"]
 
-                if test["accounts"]:
-                    for i in range(len(test["accounts"])):
+                if test_obj.is_thread(test["func"]):
+                    list_flows = []
+                    flows = test["flows"]
+                    if flows > len(self.accounts):
+                        flows = len(self.accounts)
+
+                    for i in range(flows):
                         j = i + 1
-                        if j == len(test["accounts"]):
+                        if j == len(self.accounts):
                             j = 0
-                        args = func_args.copy()
-                        flows += 1
-
-                        accounts = (test["accounts"][i][0], test["accounts"][i][1],
-                                    test["accounts"][j][0], test["accounts"][j][1])
-                        args.insert(0, accounts)
-                        list_args.append(args)
+                        accounts = (self.accounts[i][0], self.accounts[i][1],
+                                    self.accounts[j][0], self.accounts[j][1])
+                        func_args.insert(0, accounts)
+                        list_flows.append(Thread(target=test_obj.start_test, args=(test["func"], func_args.copy())))
+                        func_args.pop(0)
                 else:
-                    list_args.append(func_args)
-                    flows += 1
+                    list_flows.append(Thread(target=test_obj.start_test, args=(test["func"], func_args.copy())))
+
                 logger.info("Start test {0}(flows: {3}): {1}{2}".format(test_num, test["func"],
-                                                                        test["args"], flows))
+                                                                        test["args"], len(list_flows)))
 
-                for i in range(flows):
-
-                    list_flows.append(Thread(target=test_obj.start_test, args=(test["func"], list_args[i])))
-                    list_flows[-1].start()
+                for flow in list_flows:
+                    flow.start()
                 while True:
                     list_alive = [state.is_alive() for state in list_flows if state.is_alive()]
                     if not list_alive:

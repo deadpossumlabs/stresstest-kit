@@ -72,11 +72,12 @@ if __name__ == '__main__':
     addresses = []
     for account in accounts:
         addresses.append(account[0])
-    tests = TestController(WEB3_PROVIDER_URI, infura_config)
+    tests = TestController(WEB3_PROVIDER_URI, infura_config, accounts)
 
                                                     # Tests
 
     # tests.add_test("accounts")
+    # tests.add_test("node")
 
     # tests.add_test("unlocks", (addresses, "1 2 3"))
     # tests.add_test("privates", ("123", ))
@@ -87,29 +88,27 @@ if __name__ == '__main__':
     # tests.add_test("new_acc", ("123", "390527faae26b21a32e8f220919ae9af626f6f09a20013ae1b960297ea36ddcc"))
     # tests.add_test("deploy", ("test.sol", accounts[0][1]))
 
-    # tests.add_test("unlock", ("0x1c3b9974c14381c932506742a79295a779307101", "123"))
+    # tests.add_test("unlocks", (addresses, "123"))
     # tests.add_test("unlock", ("0x49d80828f56779f7ffc83114dfd7ce0aa9ce811c", "1 2 3"))
     # tests.add_test("unlock", ("0x1f642cdc8ee32f586478bc7d5f14303f0fc0115d", "456"))
     # tests.add_test("unlock", ("0x8484aaf2eb9d16ddeaf8c05e0ac5d46fbd8410c2", "789"))
 
-    # tests.add_test("send", (accounts[1][1], "0x8E4Fca6b50bB1f3D874bdda1F57D957868938ED1", "cycle", "test.abi"))
-
-    # tests.add_test("get_trans", ("0xe16ab2cd31c17ef38154b0a340724eb44c505907916416b4e6805ee6805c258d", ))
+    # tests.add_test("get_trans", ("0xff28bd3c788b7d9cc90f47a4670e3b1a6dd720579797f4c63e631c2b34b6b744", ))
 
     # for account in accounts:
     #     tests.add_test("balance", (account[0], ))
 
     # tests.add_test("send_eth", (accounts[0], accounts[1], 100000000000000000))  # = 0.1 Eth
-    # tests.add_test("send_eth", (accounts[1], accounts[5], 10000000000000000000000000))  # = 10000 Eth
-    # tests.add_test("send_eth", (accounts[1], accounts[6], 10000000000000000000000000))  # = 10000 Eth
-    # tests.add_test("send_eth", (accounts[1], accounts[7], 10000000000000000000000000))  # = 10000 Eth
-    # tests.add_test("send_eth", (accounts[1], accounts[8], 10000000000000000000000000))  # = 10000 Eth
+    # tests.add_test("send_eth", (accounts[2], accounts[5], 10000000000000000000000000))  # = 10000 Eth
+    # tests.add_test("send_eth", (accounts[3], accounts[6], 10000000000000000000000000))  # = 10000 Eth
+    # tests.add_test("send_eth", (accounts[4], accounts[7], 10000000000000000000000000))  # = 10000 Eth
+    # tests.add_test("send_eth", (accounts[2], accounts[8], 10000000000000000000000000))  # = 10000 Eth
 
 
     # tests.add_test("test_same", (accounts[0][0], accounts[0][1], accounts[1][0]))
-    # tests.add_test("test_many", (1,), accounts=accounts)
-    tests.add_test("test_expensive", (1,), accounts=accounts)
-    # tests.add_test("test_heavy", (2, "0xa981c1D103F000387fbd025ccc403EA58353EF48", "empty", "test.abi"), accounts=accounts)
-    # tests.add_test("test_heavy", (1, "0x038c7623c7a9d730170297De7B4d33Bb99dF98eD", "empty", "test.abi"), accounts=accounts) # ganache
+    # tests.add_test("test_many", (10,), flows=10)
+    # tests.add_test("test_expensive", (5, "0xa981c1D103F000387fbd025ccc403EA58353EF48", "empty", "test.abi"), flows=10)
+    # tests.add_test("test_heavy", (20, "0xa981c1D103F000387fbd025ccc403EA58353EF48", "empty", "test.abi"), flows=10)
+    # tests.add_test("test_heavy", (1, "0x038c7623c7a9d730170297De7B4d33Bb99dF98eD", "empty", "test.abi"), flows=10) # ganache
 
     tests.start_tests()

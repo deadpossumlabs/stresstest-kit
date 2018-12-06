@@ -20,41 +20,47 @@ class Tests:
         self.logger = logger
         self.inspector = inspector
         self.funcs = {
-            "test_many": self.test_many_light_trans,
-            "test_heavy": self.test_many_heavy_trans,
-            "test_expensive": self.test_expensive_trans,
-            "test_same": self.send_same_trans,
-            "balance": self.get_balance,
-            "deploy": self.deploy_contract,
-            "accounts": self.get_accounts_info,
-            "get_trans": self.get_transaction_info,
-            "send_trans": self.send_transaction_from_contract,
-            "send_eth": self.send_eth,
-            "unlock": self.unlock_account,
-            "unlocks": self.unlock_accounts,
-            "new_acc": self.set_account,
-            "private": self.get_private_key,
-            "privates": self.get_private_keys,
-            # "node": self.node_info,
+            "test_many": (self.test_many_light_trans, True),
+            "test_heavy": (self.test_many_heavy_trans, True),
+            "test_expensive": (self.test_expensive_trans, True),
+            "test_same": (self.send_same_trans, False),
+            "balance": (self.get_balance, False),
+            "deploy": (self.deploy_contract, False),
+            "accounts": (self.get_accounts_info, False),
+            "get_trans": (self.get_transaction_info, False),
+            "send_trans": (self.send_transaction_from_contract, False),
+            "send_eth": (self.send_eth, False),
+            "unlock": (self.unlock_account, False),
+            "unlocks": (self.unlock_accounts, False),
+            "new_acc": (self.set_account, False),
+            "private": (self.get_private_key, False),
+            "privates": (self.get_private_keys, False),
+            "node": (self.node_info, False),
         }
 
-    def start_test(self, func_name, args):
+    def is_thread(self, func_name):
         if func_name in self.funcs:
-            # try:
-            self.funcs[func_name](*args)
-            # except TypeError as e:
-            #     self.logger.error("\tError in command {0}{1}: {2}".format(func_name, args, e))
-            #     return
-            # except Exception as e:
-            #     self.logger.error("\tError in command {0}{1}: {2}".format(func_name, args, e))
+            return self.funcs[func_name][1]
+        return None
+
+    def start_test(self, func_name, args):
+
+        if func_name in self.funcs:
+            try:
+                self.funcs[func_name][0](*args)
+            except TypeError as e:
+                self.logger.error("\tError in command {0}{1}: {2}".format(func_name, args, e))
+                return
+            except Exception as e:
+                self.logger.error("\tError in command {0}{1}: {2}".format(func_name, args, e))
         else:
             self.logger.error("\tUnresolved command: \"{0}\"".format(func_name))
 
 
                                                 ## Tests with node ##
     def node_info(self):
-        self.w3.admin.nodeInfo()
-        self.logger.info("\t{0}".format(self.w3.admin.nodeInfo))
+        # self.w3.admin.nodeInfo()
+        self.logger.info("\t{0}".format(self.w3.net))
 
     def send_eth(self, account1, account2, funds):
         sender = self.w3.toChecksumAddress(account1[0])
@@ -92,79 +98,9 @@ class Tests:
         while True:
             try:
                 trans_param = dict(
-                        nonce=nonce,
-                        gasPrice=self.w3.eth.gasPrice,
-                        gas=21000,
-                        to=address2,
-                        value=hex(10000000000000000)
-                )
-                signed_txn = self.w3.eth.account.signTransaction(trans_param, key1)
-
-                trans = self.w3.eth.sendRawTransaction(signed_txn.rawTransaction)
-
-                trans_hash = HexBytes(trans)
-                self.logger.info("\tSend transaction: {0} with nonce: {1}".format(trans_hash.hex(), nonce))
-            except ValueError as e:
-                self.logger.warning("\t{0}".format(e.args[0]["message"]))
-                # time.sleep(2)
-                # address1, address2 = address2, address1
-                # key1, key2 = key2, key1
-                continue
-
-            except Exception as e:
-                # try:
-                #     lock.release()
-                # except Exception:
-                #     pass
-                # self.logger.error("\tUnhandled error:{0}{1}".format(e.__class__.__name__, e))
-                raise e
-            finally:
-                nonce += 1
-                if time.time() - start_time >= time_live:
-                    break
-
-    def test_many_heavy_trans(self, accounts, time_live, cnt_address, func_name, abi_file, args=None):
-        value1 = 0
-        value2 = 100000
-        gas1 = self.w3.eth.gasPrice
-        gas2 = gas1 + 1000
-        start_time = time.time()
-        acct1 = self.w3.eth.account.privateKeyToAccount(accounts[1])
-        acct2 = self.w3.eth.account.privateKeyToAccount(accounts[3])
-
-        nonce1 = self.w3.eth.getTransactionCount(acct1.address)
-        nonce2 = self.w3.eth.getTransactionCount(acct2.address)
-
-        while True:
-            self.send_transaction_from_contract(accounts[1], cnt_address, func_name, abi_file, nonce1,
-                                                args=args, gasprice=gas1)
-            # time.sleep(1)
-            # self.send_transaction_from_contract(accounts[3], cnt_address, func_name, abi_file, nonce2,
-            #                                     args=[value2], gasprice=gas2)
-            if time.time() - start_time >= time_live:
-                break
-            nonce1 += 1
-            nonce2 += 1
-            value1 += 1
-            value2 += 1
-            gas1 += 10000000000000
-            gas2 += 11000000000000
-            # time.sleep(1)
-
-    def test_expensive_trans(self, accounts, time_live):
-
-        start_time = time.time()
-        address1 = self.w3.toChecksumAddress(accounts[0])
-
-        key1 = accounts[1]
-        address2 = self.w3.toChecksumAddress(accounts[2])
-        nonce = self.w3.eth.getTransactionCount(address1)
-        while True:
-            try:
-                trans_param = dict(
                     nonce=nonce,
-                    gasPrice=100000000000000000,
-                    gas=100000,
+                    gasPrice=self.w3.eth.gasPrice,
+                    gas=21000,
                     to=address2,
                     value=hex(10000000000000000)
                 )
@@ -176,23 +112,94 @@ class Tests:
                 self.logger.info("\tSend transaction: {0} with nonce: {1}".format(trans_hash.hex(), nonce))
             except ValueError as e:
                 self.logger.warning("\t{0}".format(e.args[0]["message"]))
-                # time.sleep(2)
-                # address1, address2 = address2, address1
-                # key1, key2 = key2, key1
                 continue
 
             except Exception as e:
-                # try:
-                #     lock.release()
-                # except Exception:
-                #     pass
-                # self.logger.error("\tUnhandled error:{0}{1}".format(e.__class__.__name__, e))
                 raise e
             finally:
                 nonce += 1
                 if time.time() - start_time >= time_live:
                     break
-        pass
+
+    def test_many_heavy_trans(self, accounts, time_live, cnt_address, func_name, abi_file, args=None):
+        gas = self.w3.eth.gasPrice
+        start_time = time.time()
+        acct = self.w3.eth.account.privateKeyToAccount(accounts[1])
+        nonce = self.w3.eth.getTransactionCount(acct.address)
+
+        while True:
+            try:
+                self.send_transaction_from_contract(accounts[1], cnt_address, func_name, abi_file, nonce,
+                                                    args=args, gasprice=gas)
+            except ValueError as e:
+                self.logger.info("\tWarning: {0}".format(e.args[0]["message"]))
+                continue
+            finally:
+                if time.time() - start_time >= time_live:
+                    break
+                nonce += 1
+
+    def test_expensive_trans(self, accounts, time_live, cnt_address, func_name, abi_file, args=None):
+        gas = 100000000000000000000
+        start_time = time.time()
+        acct = self.w3.eth.account.privateKeyToAccount(accounts[1])
+        nonce = self.w3.eth.getTransactionCount(acct.address)
+
+        while True:
+            try:
+                self.send_transaction_from_contract(accounts[1], cnt_address, func_name, abi_file, nonce,
+                                                    args=args, gasprice=gas)
+            except ValueError as e:
+                self.logger.info("\tWarning: {0}".format(e.args[0]["message"]))
+                continue
+            finally:
+                if time.time() - start_time >= time_live:
+                    break
+                nonce += 1
+
+
+
+
+        # start_time = time.time()
+        # address1 = self.w3.toChecksumAddress(accounts[0])
+        #
+        # key1 = accounts[1]
+        # address2 = self.w3.toChecksumAddress(accounts[2])
+        # nonce = self.w3.eth.getTransactionCount(address1)
+        # while True:
+        #     try:
+        #         trans_param = dict(
+        #             nonce=nonce,
+        #             gasPrice=100000000000000000,
+        #             gas=100000,
+        #             to=address2,
+        #             value=hex(10000000000000000)
+        #         )
+        #         signed_txn = self.w3.eth.account.signTransaction(trans_param, key1)
+        #
+        #         trans = self.w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+        #
+        #         trans_hash = HexBytes(trans)
+        #         self.logger.info("\tSend transaction: {0} with nonce: {1}".format(trans_hash.hex(), nonce))
+        #     except ValueError as e:
+        #         self.logger.warning("\t{0}".format(e.args[0]["message"]))
+        #         # time.sleep(2)
+        #         # address1, address2 = address2, address1
+        #         # key1, key2 = key2, key1
+        #         continue
+        #
+        #     except Exception as e:
+        #         # try:
+        #         #     lock.release()
+        #         # except Exception:
+        #         #     pass
+        #         # self.logger.error("\tUnhandled error:{0}{1}".format(e.__class__.__name__, e))
+        #         raise e
+        #     finally:
+        #         nonce += 1
+        #         if time.time() - start_time >= time_live:
+        #             break
+        # pass
 
     def send_same_trans(self, sender_addr, sender_priv, receive_addr):
 
@@ -244,7 +251,7 @@ class Tests:
             is_unlock = self.w3.personal.unlockAccount(address, passphrase)
         except ValueError as e:
             if e.args[0]["data"] == "InvalidAccount":
-                self.logger.error("\tCannot find account.")
+                self.logger.error("\tCannot find account: {0}".format(address))
             else:
                 self.logger.error("\tUnhandled error: {0}".format(e))
             return
@@ -290,7 +297,7 @@ class Tests:
             accounts[i] = accounts[i].lower()
         logs = "\tAccounts:"
         for account in accounts:
-            account = "\n\t\t\t\t\t\t\t\t\t\t\t" + account
+            account = "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t" + account
             logs += account
         logs += "\n\t"
         self.logger.info(logs)
@@ -378,10 +385,11 @@ class Tests:
         pass
 
     def get_transaction_info(self, hash_trans):
+        time.sleep(3)
         trans_info = self.w3.eth.getTransactionReceipt(hash_trans)
         if not trans_info:
-            time.sleep(3)
-            trans_info = self.w3.eth.getTransactionReceipt(hash_trans)
+            self.logger.error("\t Transaction {0} is not found.".format(hash_trans))
+            return
         trans_info_pretty = json.dumps(dict(trans_info), cls=HexJsonEncoder, indent=48)
         self.logger.info("\tTransaction {0}:\n"
                          "\t\t\t\t\t\t\t\t\t\t\t{1}".format(hash_trans, trans_info_pretty))
@@ -423,8 +431,9 @@ class Tests:
         signed = acct.signTransaction(txn_hash)
         trans = self.w3.eth.sendRawTransaction(signed.rawTransaction)
         trans_address = HexBytes(trans).hex()
-        self.logger.info("\tSend transaction '{2}' from: {3}: {0} with nonce: {1}".format(trans_address, nonce,
-                                                                                          func_name, cnt_address))
+        self.logger.info("\tSend transaction '{2}' from contract: {3}. Hash: {0} with nonce: {1}".format(trans_address, nonce,
+                                                                                                   func_name,
+                                                                                                   cnt_address))
 
                                                             ## Other tests ##
 
