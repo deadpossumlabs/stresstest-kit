@@ -35,7 +35,7 @@ class Tests:
             "new_acc": (self.set_account, False),
             "private": (self.get_private_key, False),
             "privates": (self.get_private_keys, False),
-            "node": (self.node_info, False),
+            # "node": (self.node_info, False),
         }
 
     def is_thread(self, func_name):
@@ -157,49 +157,6 @@ class Tests:
                     break
                 nonce += 1
 
-
-
-
-        # start_time = time.time()
-        # address1 = self.w3.toChecksumAddress(accounts[0])
-        #
-        # key1 = accounts[1]
-        # address2 = self.w3.toChecksumAddress(accounts[2])
-        # nonce = self.w3.eth.getTransactionCount(address1)
-        # while True:
-        #     try:
-        #         trans_param = dict(
-        #             nonce=nonce,
-        #             gasPrice=100000000000000000,
-        #             gas=100000,
-        #             to=address2,
-        #             value=hex(10000000000000000)
-        #         )
-        #         signed_txn = self.w3.eth.account.signTransaction(trans_param, key1)
-        #
-        #         trans = self.w3.eth.sendRawTransaction(signed_txn.rawTransaction)
-        #
-        #         trans_hash = HexBytes(trans)
-        #         self.logger.info("\tSend transaction: {0} with nonce: {1}".format(trans_hash.hex(), nonce))
-        #     except ValueError as e:
-        #         self.logger.warning("\t{0}".format(e.args[0]["message"]))
-        #         # time.sleep(2)
-        #         # address1, address2 = address2, address1
-        #         # key1, key2 = key2, key1
-        #         continue
-        #
-        #     except Exception as e:
-        #         # try:
-        #         #     lock.release()
-        #         # except Exception:
-        #         #     pass
-        #         # self.logger.error("\tUnhandled error:{0}{1}".format(e.__class__.__name__, e))
-        #         raise e
-        #     finally:
-        #         nonce += 1
-        #         if time.time() - start_time >= time_live:
-        #             break
-        # pass
 
     def send_same_trans(self, sender_addr, sender_priv, receive_addr):
 
