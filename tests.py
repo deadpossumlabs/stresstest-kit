@@ -1,4 +1,5 @@
 import json
+import os
 import time
 import traceback
 
@@ -22,7 +23,7 @@ class Tests:
             "test_many": self.test_many_light_trans,
             "test_heavy": self.test_many_heavy_trans,
             "test_expensive": self.test_expensive_trans,
-            "sametrans": self.send_same_trans,
+            "test_same": self.send_same_trans,
             "balance": self.get_balance,
             "deploy": self.deploy_contract,
             "accounts": self.get_accounts_info,
@@ -30,8 +31,10 @@ class Tests:
             "send_trans": self.send_transaction_from_contract,
             "send_eth": self.send_eth,
             "unlock": self.unlock_account,
+            "unlocks": self.unlock_accounts,
             "new_acc": self.set_account,
             "private": self.get_private_key,
+            "privates": self.get_private_keys,
             # "node": self.node_info,
         }
 
@@ -71,7 +74,7 @@ class Tests:
         trans_hash = HexBytes(trans)
         self.logger.info("\tSend transaction: {0}".format(trans_hash.hex()))
 
-    def test_many_light_trans(self, time_live, accounts):
+    def test_many_light_trans(self, accounts, time_live):
 
         """
         Checking the network for resistance to a large number of light
@@ -100,7 +103,7 @@ class Tests:
                 trans = self.w3.eth.sendRawTransaction(signed_txn.rawTransaction)
 
                 trans_hash = HexBytes(trans)
-                self.logger.info("\tSend transaction: {0}".format(trans_hash.hex()))
+                self.logger.info("\tSend transaction: {0} with nonce: {1}".format(trans_hash.hex(), nonce))
             except ValueError as e:
                 self.logger.warning("\t{0}".format(e.args[0]["message"]))
                 # time.sleep(2)
@@ -120,7 +123,7 @@ class Tests:
                 if time.time() - start_time >= time_live:
                     break
 
-    def test_many_heavy_trans(self, time_live, cnt_address, func_name, abi_file, accounts):
+    def test_many_heavy_trans(self, accounts, time_live, cnt_address, func_name, abi_file, args=None):
         value1 = 0
         value2 = 100000
         gas1 = self.w3.eth.gasPrice
@@ -134,7 +137,7 @@ class Tests:
 
         while True:
             self.send_transaction_from_contract(accounts[1], cnt_address, func_name, abi_file, nonce1,
-                                                args=[value1], gasprice=gas1)
+                                                args=args, gasprice=gas1)
             # time.sleep(1)
             # self.send_transaction_from_contract(accounts[3], cnt_address, func_name, abi_file, nonce2,
             #                                     args=[value2], gasprice=gas2)
@@ -148,7 +151,7 @@ class Tests:
             gas2 += 11000000000000
             # time.sleep(1)
 
-    def test_expensive_trans(self, time_live, accounts):
+    def test_expensive_trans(self, accounts, time_live):
 
         start_time = time.time()
         address1 = self.w3.toChecksumAddress(accounts[0])
@@ -170,7 +173,7 @@ class Tests:
                 trans = self.w3.eth.sendRawTransaction(signed_txn.rawTransaction)
 
                 trans_hash = HexBytes(trans)
-                self.logger.info("\tSend transaction: {0}".format(trans_hash.hex()))
+                self.logger.info("\tSend transaction: {0} with nonce: {1}".format(trans_hash.hex(), nonce))
             except ValueError as e:
                 self.logger.warning("\t{0}".format(e.args[0]["message"]))
                 # time.sleep(2)
@@ -191,33 +194,31 @@ class Tests:
                     break
         pass
 
-    def send_same_trans(self, accounts):
+    def send_same_trans(self, sender_addr, sender_priv, receive_addr):
 
         """
         Check network for sending identical transactions
-        :param accounts: a list or a tuple that includes two addresses and a keys from accounts
-        for transferring Ethereum to each other
+        :param receive_addr: receive eth-address
+        :param sender_priv: sender eth-private key
+        :param sender_addr: sender eth-address
         :return: None
         """
-        address1 = self.w3.toChecksumAddress(accounts[0][0])
-        key1 = accounts[0][1]
-        address2 = self.w3.toChecksumAddress(accounts[1][0])
-
+        sender_addr = self.w3.toChecksumAddress(sender_addr)
+        receive_addr = self.w3.toChecksumAddress(receive_addr)
         while True:
             try:
                 params = dict(
-                    nonce=self.w3.eth.getTransactionCount(address1),
+                    nonce=self.w3.eth.getTransactionCount(sender_addr),
                     gasPrice=self.w3.eth.gasPrice,
                     gas=100000,
-                    # data=tx['input'],
-                    to=address2,
+                    to=receive_addr,
                     value=hex(10000000000000000)
                 )
                 params2 = params.copy()
-                params2["value"] = hex(10000000000000001)
-                params2["gasPrice"] += 10000000000000
-                signed_txn = self.w3.eth.account.signTransaction(params, key1)
-                _signed_txn = self.w3.eth.account.signTransaction(params2, key1)
+                params2["value"] = hex(1)
+                params2["gasPrice"] += 10000000000000000000
+                signed_txn = self.w3.eth.account.signTransaction(params, sender_priv)
+                _signed_txn = self.w3.eth.account.signTransaction(params2, sender_priv)
                 trans1 = self.w3.eth.sendRawTransaction(signed_txn.rawTransaction)
                 trans2 = self.w3.eth.sendRawTransaction(_signed_txn.rawTransaction)
                 trans1_hash = HexBytes(trans1)
@@ -229,16 +230,9 @@ class Tests:
             except ValueError as e:
                 self.logger.warning("\t{0}".format(e.args[0]["message"]))
                 time.sleep(2)
-                # address1, address2 = address2, address1
-                # key1, key2 = key2, key1
                 continue
 
             except Exception as e:
-                # try:
-                #     lock.release()
-                # except Exception:
-                #     pass
-                # self.logger.error("\tUnhandled error:{0}{1}".format(e.__class__.__name__, e))
                 raise e
 
 
@@ -252,12 +246,30 @@ class Tests:
             if e.args[0]["data"] == "InvalidAccount":
                 self.logger.error("\tCannot find account.")
             else:
-                self.logger.error("Unhandled error: {0}".format(e))
+                self.logger.error("\tUnhandled error: {0}".format(e))
             return
-        message = "Account {} is not unlocked. Use right passphrase".format(address)
+        message = "Account {} is not unlocked. Use right passphrase.".format(address)
         if is_unlock:
-            message = "Account {} is succesfully unlocked".format(address)
-        self.logger.info(message)
+            message = "Account {} is successfully unlocked.".format(address)
+        self.logger.info("\t" + message)
+
+    def unlock_accounts(self, addresses, passphrase):
+        for address in addresses:
+            address = self.w3.toChecksumAddress(address)
+            try:
+                is_unlock = self.w3.personal.unlockAccount(address, passphrase)
+            except ValueError as e:
+                if e.args[0]["data"] == "InvalidAccount":
+                    self.logger.error("\tCan't find account: {0}.".format(address))
+                elif e.args[0]["data"] == "InvalidPassword":
+                    self.logger.error("\tInvalid password: {0}.".format(address))
+                else:
+                    self.logger.error("Unhandled error: {0}.".format(e))
+                continue
+            message = "Account {} is not unlocked. Use right passphrase.".format(address)
+            if is_unlock:
+                message = "Account {} is successfully unlocked.".format(address)
+            self.logger.info("\t" + message)
 
     def get_balance(self, address):
 
@@ -282,7 +294,6 @@ class Tests:
             logs += account
         logs += "\n\t"
         self.logger.info(logs)
-        return accounts
 
     def get_accounts(self):
         accounts = self.w3.eth.accounts
@@ -302,13 +313,32 @@ class Tests:
             try:
                 private_key_bin = self.w3.eth.account.decrypt(abi, password)
             except ValueError as e:
-                self.logger.error("\tCannot get private key. Make sure that you enter the correct password. ({0})".format(e))
+                self.logger.error("\tCannot get private key. "
+                                  "Make sure that you enter the correct password. ({0})".format(e))
                 return
-            _private_key = private_key_bin.hex() # 0x...
+            _private_key = private_key_bin.hex()  # have 0x
             private_key = _private_key.replace("0x", "")
             self.logger.info("\tPrivate key of {0}: {1}".format(address, private_key))
 
-                    ## Tests with contracts and transactions ##
+    def get_private_keys(self, password):
+        gen = os.walk("./accounts/")
+        accounts = next(gen)[2]
+        for account in accounts:
+            with open(FOLDERS["accounts"] + account) as keyfile:
+                abi = json.loads(keyfile.read())
+                address = "0x" + abi["address"]
+                try:
+                    private_key_bin = self.w3.eth.account.decrypt(abi, password)
+                except ValueError as e:
+                    self.logger.error(
+                        "\tCannot get private key for address {0}: {1}. "
+                        "Make sure that you enter the correct password. ({2})".format(address, account, e))
+                    continue
+                _private_key = private_key_bin.hex()  # 0x...
+                private_key = _private_key.replace("0x", "")
+                self.logger.info("\tPrivate key of {0}: {1}".format(address, private_key))
+
+                                        ## Tests with contracts and transactions ##
 
     def deploy_contract(self, file_sol, priv_key):
         with open(self.DIR_CONTRACTS + file_sol, "r") as f:
@@ -381,18 +411,22 @@ class Tests:
             trans_param["to"] = to
         if value:
             trans_param["value"] = value
-        func_args = []
         if args:
-            for arg in args:
-                func_args.append(arg)
-        txn_hash = contract.functions[func_name](*func_args).buildTransaction(trans_param)
+            func_args = []
+            if type(args) != list or type(args) != tuple:
+                func_args.append(args)
+            else:
+                func_args = args
+            txn_hash = contract.functions[func_name](*func_args).buildTransaction(trans_param)
+        else:
+            txn_hash = contract.functions[func_name]().buildTransaction(trans_param)
         signed = acct.signTransaction(txn_hash)
         trans = self.w3.eth.sendRawTransaction(signed.rawTransaction)
         trans_address = HexBytes(trans).hex()
-        self.logger.info("\tSuccessfully send transaction: {0}".format(trans_address))
+        self.logger.info("\tSend transaction '{2}' from: {3}: {0} with nonce: {1}".format(trans_address, nonce,
+                                                                                          func_name, cnt_address))
 
-
-                                                ## Other tests ##
+                                                            ## Other tests ##
 
     def import_block(self, block):
         txs = []

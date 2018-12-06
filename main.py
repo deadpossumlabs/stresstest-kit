@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     # lock1 = RLock()
     # lock2 = RLock()
-    # @todo если количество аккаунтов большое, то при тесте с дорогими функциями контракта падают потоки
+    # @todo если количество аккаунтов большое, то при тесте с дорогими функциями контракта падают потоки - timeout
     # accounts = (["0x6f01Df94aD13495c9CDe2dc2aE272e5e559834B4",
     #              "f168194b09d855dcfee49d73f237ac3f26f3a5fbaff19f24af6283418f336eab"],
     #             ["0xfBfFaa86d30053418Eb5596334FAfE35415E8706",
@@ -51,25 +51,35 @@ if __name__ == '__main__':
     accounts = (
         ["0x40fdee788a2b2cce016660fc5e7a3efeaaf0a860",
          "4B840E1D567A493B9B21308D2C85616C56CD664C97520B041F539EC5F35F62AA"],
-        # ["0x1c3b9974c14381c932506742a79295a779307101",
-        #  "68c83226fab45601676192434e7755073ce9a21f60485fc5edcd534614a15dfb"],     # 1 2 3
-        # ["0x49d80828f56779f7ffc83114dfd7ce0aa9ce811c",
-        #  "390527faae26b21a32e8f220919ae9af626f6f09a20013ae1b960297ea36ddcc"],     # 123
-        # ["0x1f642cdc8ee32f586478bc7d5f14303f0fc0115d",
-        #  "388fd455f5d3d785a7dce044f6cb60055a3cb4c282401d0b8dfc69c8ec7233aa"],     # 456
+        ["0x1c3b9974c14381c932506742a79295a779307101",
+         "68c83226fab45601676192434e7755073ce9a21f60485fc5edcd534614a15dfb"],     # 1 2 3
+        ["0x49d80828f56779f7ffc83114dfd7ce0aa9ce811c",
+         "390527faae26b21a32e8f220919ae9af626f6f09a20013ae1b960297ea36ddcc"],     # 123
+        ["0x1f642cdc8ee32f586478bc7d5f14303f0fc0115d",
+         "388fd455f5d3d785a7dce044f6cb60055a3cb4c282401d0b8dfc69c8ec7233aa"],     # 456
         ["0x8484aaf2eb9d16ddeaf8c05e0ac5d46fbd8410c2",
          "6d2f23ea27162fbb170f97b4840a272239be8b8d20c86b76f8e9d9193083546b"],     # 789
-        # ["0xc464e62D62F9d95d7d1b3A963151389671Fe782b"],
-        # ["0x5C954Fba7Df989C0DDa96eB7D7c861Ce9dd669b3"],
+        ["0x548daa8f9df9cf0161607736b316e0f9f008cd33",
+         "6fec9d5ae596f97e102d7d47f13330101f7e72b03a324f63e29e531dbba1d983"],
+        ["0x91548ab5661e0a0f83c12ee1ad59a5bd55146643",
+         "a17f8fef97056b3584e0c497459176411ba89b04c460cb1a788563c6ac8d70cc"],
+        ["0xe2d0e97f115a773c67268fd719daeb9ddedf605f",
+         "aca8d031af11a91972480ea473fc106ca075d8511df6d3ff6abe42c0407877b5"],
+        ["0xe39e686e976f3360879bcf195761ccf45412a3d7",
+         "0eabacfa58903c3d6928c3c92ede9b8c4167793c0ce330d1bf1bba8f1314d431"],
     )
+
+    addresses = []
+    for account in accounts:
+        addresses.append(account[0])
     tests = TestController(WEB3_PROVIDER_URI, infura_config)
 
                                                     # Tests
 
     # tests.add_test("accounts")
 
-    # tests.add_test("private", ("UTC--2018-12-03T14-59-13.944525811Z--1c3b9974c14381c932506742a79295a779307101", "1 2 3"))
-    # tests.add_test("private", ("UTC--2018-12-03T15-01-03.047917914Z--49d80828f56779f7ffc83114dfd7ce0aa9ce811c", "123"))
+    # tests.add_test("unlocks", (addresses, "1 2 3"))
+    # tests.add_test("privates", ("123", ))
     # tests.add_test("private", ("UTC--2018-12-03T15-08-09.573673621Z--1f642cdc8ee32f586478bc7d5f14303f0fc0115d", "456"))
     # tests.add_test("private", ("UTC--2018-12-03T15-08-28.053421410Z--8484aaf2eb9d16ddeaf8c05e0ac5d46fbd8410c2", "789"))
 
@@ -89,13 +99,17 @@ if __name__ == '__main__':
     # for account in accounts:
     #     tests.add_test("balance", (account[0], ))
 
+    # tests.add_test("send_eth", (accounts[0], accounts[1], 100000000000000000))  # = 0.1 Eth
+    # tests.add_test("send_eth", (accounts[1], accounts[5], 10000000000000000000000000))  # = 10000 Eth
+    # tests.add_test("send_eth", (accounts[1], accounts[6], 10000000000000000000000000))  # = 10000 Eth
+    # tests.add_test("send_eth", (accounts[1], accounts[7], 10000000000000000000000000))  # = 10000 Eth
+    # tests.add_test("send_eth", (accounts[1], accounts[8], 10000000000000000000000000))  # = 10000 Eth
+
+
+    # tests.add_test("test_same", (accounts[0][0], accounts[0][1], accounts[1][0]))
     # tests.add_test("test_many", (1,), accounts=accounts)
-    # tests.add_test("send_eth", (accounts[0], accounts[1], 9998279548159572706035443367))
-    # tests.add_test("test_expensive", (5,), accounts=accounts)
-
-    tests.add_test("test_heavy", (10, "0xa529799148956751756F8EB4A414B0F959A1f96F", "empty", "test.abi"), accounts=accounts)
+    tests.add_test("test_expensive", (1,), accounts=accounts)
+    # tests.add_test("test_heavy", (2, "0xa981c1D103F000387fbd025ccc403EA58353EF48", "empty", "test.abi"), accounts=accounts)
     # tests.add_test("test_heavy", (1, "0x038c7623c7a9d730170297De7B4d33Bb99dF98eD", "empty", "test.abi"), accounts=accounts) # ganache
-
-    # tests.add_test("sametrans", (accounts, ))
 
     tests.start_tests()

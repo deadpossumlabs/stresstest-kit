@@ -35,16 +35,15 @@ def get_logger(test_num):
 
     ch = logging.StreamHandler()  # StreamHandler logs to console
     ch.setLevel(logging.INFO)
-    ch_format = logging.Formatter('%(levelname)-10s[%(asctime)s] %(message)s')
+    ch_format = logging.Formatter('%(levelname)-15s%(threadName)-15s[%(asctime)s] %(message)s')
     ch.setFormatter(ch_format)
 
     fh = logging.FileHandler('./logs/LOG-{1}-test{0}.log'.format(test_num, get_time()))
     fh.setLevel(logging.INFO)
-    fh_format = logging.Formatter('%(levelname)-10s[%(asctime)s] %(message)s')
+    fh_format = logging.Formatter('%(levelname)-15s%(threadName)-15s[%(asctime)s] %(message)s')
     fh.setFormatter(fh_format)
 
     logger.addHandler(ch)
     logger.addHandler(fh)
 
     return logger
-

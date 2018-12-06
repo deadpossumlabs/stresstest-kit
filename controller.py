@@ -5,6 +5,7 @@ from block_inspector import BlockInspector
 from threading import Thread
 from helper import get_logger
 from tests import Tests
+from time import sleep
 
 
 class TestController(object):
@@ -55,7 +56,7 @@ class TestController(object):
 
                         accounts = (test["accounts"][i][0], test["accounts"][i][1],
                                     test["accounts"][j][0], test["accounts"][j][1])
-                        args.append(accounts)
+                        args.insert(0, accounts)
                         list_args.append(args)
                 else:
                     list_args.append(func_args)
@@ -79,3 +80,4 @@ class TestController(object):
 
             finally:
                 test_num += 1
+                sleep(5)  # There are cases when transactions in same tests do not have time to process on the node
