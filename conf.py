@@ -9,3 +9,7 @@ def infura_config(binder):
 
 def base_config(binder):
     binder.bind_to_constructor(ParityEthJsonRpc, lambda: ParityEthJsonRpc("status.moonshrd.io"))
+
+
+def localhost_config(binder):
+    binder.bind_to_constructor(ParityEthJsonRpc, lambda: ParityEthJsonRpc("localhost:8545"))

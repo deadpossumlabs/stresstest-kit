@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 import time
 import traceback
 
@@ -32,9 +33,10 @@ class Tests:
             "send_eth": (self.send_eth, False),
             "unlock": (self.unlock_account, False),
             "unlocks": (self.unlock_accounts, False),
-            "new_acc": (self.set_account, False),
             "private": (self.get_private_key, False),
             "privates": (self.get_private_keys, False),
+            "nonce": (self.get_current_nonce, False),
+            # "new_acc": (self.set_account, False),
             # "node": (self.node_info, False),
         }
 
@@ -90,13 +92,17 @@ class Tests:
                         from two accounts for transferring Ethereum
         """
 
+        tries = 0
+        success = 0
         start_time = time.time()
         address1 = self.w3.toChecksumAddress(accounts[0])
         key1 = accounts[1]
         address2 = self.w3.toChecksumAddress(accounts[2])
-        nonce = self.w3.eth.getTransactionCount(address1)
+        nonce = self.get_current_nonce(address1)
+        self.logger.info('Flow "{0}" with main account: {1}'.format(threading.current_thread().name, address1))
         while True:
             try:
+                tries += 1
                 trans_param = dict(
                     nonce=nonce,
                     gasPrice=self.w3.eth.gasPrice,
@@ -110,6 +116,7 @@ class Tests:
 
                 trans_hash = HexBytes(trans)
                 self.logger.info("\tSend transaction: {0} with nonce: {1}".format(trans_hash.hex(), nonce))
+                success += 1
             except ValueError as e:
                 self.logger.warning("\t{0}".format(e.args[0]["message"]))
                 continue
@@ -119,44 +126,54 @@ class Tests:
             finally:
                 nonce += 1
                 if time.time() - start_time >= time_live:
+                    self.logger.info("Percent of successfully sent transactions: {0:.0%}".format(success / tries))
                     break
 
     def test_many_heavy_trans(self, accounts, time_live, cnt_address, func_name, abi_file, args=None):
+        success = 0
+        tries = 0
         gas = self.w3.eth.gasPrice
         start_time = time.time()
         acct = self.w3.eth.account.privateKeyToAccount(accounts[1])
-        nonce = self.w3.eth.getTransactionCount(acct.address)
+        nonce = self.get_current_nonce(acct.address)
 
         while True:
             try:
                 self.send_transaction_from_contract(accounts[1], cnt_address, func_name, abi_file, nonce,
                                                     args=args, gasprice=gas)
+                success += 1
             except ValueError as e:
                 self.logger.info("\tWarning: {0}".format(e.args[0]["message"]))
                 continue
             finally:
+                tries += 1
                 if time.time() - start_time >= time_live:
+                    self.logger.info("Percent of successfully sent transactions: {0:.0%}".format(success / tries))
                     break
                 nonce += 1
 
     def test_expensive_trans(self, accounts, time_live, cnt_address, func_name, abi_file, args=None):
+        tries = 0
+        success = 0
         gas = 100000000000000000000
         start_time = time.time()
         acct = self.w3.eth.account.privateKeyToAccount(accounts[1])
-        nonce = self.w3.eth.getTransactionCount(acct.address)
+        nonce = self.get_current_nonce(acct.address)
 
         while True:
             try:
+                tries += 1
                 self.send_transaction_from_contract(accounts[1], cnt_address, func_name, abi_file, nonce,
                                                     args=args, gasprice=gas)
+                success += 1
             except ValueError as e:
                 self.logger.info("\tWarning: {0}".format(e.args[0]["message"]))
                 continue
             finally:
                 if time.time() - start_time >= time_live:
+                    self.logger.info("Percent of successfully sent transactions: {0:.0%}".format(success / tries))
                     break
                 nonce += 1
-
 
     def send_same_trans(self, sender_addr, sender_priv, receive_addr):
 
@@ -265,10 +282,9 @@ class Tests:
             accounts[i] = accounts[i].lower()
         return accounts
 
-    def set_account(self, passphrase, priv_key, count=1):
-        for i in range(count):
-            address = self.w3.personal.importRawKey(priv_key, passphrase)
-            self.logger.info("\tNew account: {0}".format(address))
+    def set_account(self, priv_key, passphrase):
+        address = self.w3.personal.importRawKey(priv_key, passphrase)
+        self.logger.info("\tNew account: {0}".format(address))
 
     def get_private_key(self, file, password):
         with open(FOLDERS["accounts"] + file) as keyfile:
@@ -301,6 +317,12 @@ class Tests:
                 _private_key = private_key_bin.hex()  # 0x...
                 private_key = _private_key.replace("0x", "")
                 self.logger.info("\tPrivate key of {0}: {1}".format(address, private_key))
+
+    def get_current_nonce(self, address):
+        address = self.w3.toChecksumAddress(address)
+        nonce = self.w3.eth.getTransactionCount(address)
+        self.logger.info("Current nonce of {0}: {1}".format(address, nonce))
+        return nonce
 
                                         ## Tests with contracts and transactions ##
 

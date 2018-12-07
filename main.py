@@ -69,9 +69,9 @@ if __name__ == '__main__':
          "0eabacfa58903c3d6928c3c92ede9b8c4167793c0ce330d1bf1bba8f1314d431"],
     )
 
-    addresses = []
-    for account in accounts:
-        addresses.append(account[0])
+    addresses = [account[0] for account in accounts]
+    priv_keys = [account[1] for account in accounts]
+
     tests = TestController(WEB3_PROVIDER_URI, infura_config, accounts)
 
                                                     # Tests
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     # tests.add_test("privates", ("123", ))
     # tests.add_test("private", ("UTC--2018-12-03T15-08-09.573673621Z--1f642cdc8ee32f586478bc7d5f14303f0fc0115d", "456"))
     # tests.add_test("private", ("UTC--2018-12-03T15-08-28.053421410Z--8484aaf2eb9d16ddeaf8c05e0ac5d46fbd8410c2", "789"))
-
+    # tests.add_test("new_acc", ("0eabacfa58903c3d6928c3c92ede9b8c4167793c0ce330d1bf1bba8f1314d431", "123"))
 
     # tests.add_test("new_acc", ("123", "390527faae26b21a32e8f220919ae9af626f6f09a20013ae1b960297ea36ddcc"))
     # tests.add_test("deploy", ("test.sol", accounts[0][1]))
@@ -102,11 +102,12 @@ if __name__ == '__main__':
     # tests.add_test("send_eth", (accounts[2], accounts[5], 10000000000000000000000000))  # = 10000 Eth
     # tests.add_test("send_eth", (accounts[3], accounts[6], 10000000000000000000000000))  # = 10000 Eth
     # tests.add_test("send_eth", (accounts[4], accounts[7], 10000000000000000000000000))  # = 10000 Eth
-    # tests.add_test("send_eth", (accounts[2], accounts[8], 10000000000000000000000000))  # = 10000 Eth
-
+    # tests.add_test("send_eth", (accounts[2], accounts[8], 100000000000000000000000000))  # = 100000 Eth
+    # tests.add_test("nonce", (addresses[0], ))
+    tests.add_test("send_trans", (priv_keys[1], "0xa981c1D103F000387fbd025ccc403EA58353EF48", "empty", "test.abi", 1093))
 
     # tests.add_test("test_same", (accounts[0][0], accounts[0][1], accounts[1][0]))
-    # tests.add_test("test_many", (10,), flows=10)
+    # tests.add_test("test_many", (2,), flows=10)
     # tests.add_test("test_expensive", (5, "0xa981c1D103F000387fbd025ccc403EA58353EF48", "empty", "test.abi"), flows=10)
     # tests.add_test("test_heavy", (20, "0xa981c1D103F000387fbd025ccc403EA58353EF48", "empty", "test.abi"), flows=10)
     # tests.add_test("test_heavy", (1, "0x038c7623c7a9d730170297De7B4d33Bb99dF98eD", "empty", "test.abi"), flows=10) # ganache
